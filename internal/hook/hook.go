@@ -20,18 +20,38 @@ type Hook struct {
 // none apply. Detection priority:
 //
 //  1. Custom script from .wt.toml hooks.post_create
-//  2. package.json  → npm install
-//  3. go.mod        → go mod download
-//  4. requirements.txt → pip install -r requirements.txt
-//  5. pyproject.toml   → pip install -e .
+//  2. Specific lockfiles (pnpm, bun, yarn, uv)
+//  3. General manifest files (deno, npm, go, pip)
 func Detect(worktreePath string, cfg *config.Config) (*Hook, error) {
 	if cfg != nil && cfg.Hooks.PostCreate != "" {
 		return &Hook{Name: "custom", Command: []string{cfg.Hooks.PostCreate}}, nil
 	}
+
+	// Lockfile based detection
+	lockfiles := []struct {
+		file string
+		hook Hook
+	}{
+		{"pnpm-lock.yaml", Hook{"pnpm install", []string{"pnpm", "install"}}},
+		{"bun.lockb", Hook{"bun install", []string{"bun", "install"}}},
+		{"bun.lock", Hook{"bun install", []string{"bun", "install"}}},
+		{"yarn.lock", Hook{"yarn install", []string{"yarn", "install"}}},
+		{"uv.lock", Hook{"uv sync", []string{"uv", "sync"}}},
+	}
+
+	for _, c := range lockfiles {
+		if fileExists(filepath.Join(worktreePath, c.file)) {
+			h := c.hook
+			return &h, nil
+		}
+	}
+
 	checks := []struct {
 		file string
 		hook Hook
 	}{
+		{"deno.json", Hook{"deno install", []string{"deno", "install"}}},
+		{"deno.jsonc", Hook{"deno install", []string{"deno", "install"}}},
 		{"package.json", Hook{"npm install", []string{"npm", "install"}}},
 		{"go.mod", Hook{"go mod download", []string{"go", "mod", "download"}}},
 		{"requirements.txt", Hook{"pip install", []string{"pip", "install", "-r", "requirements.txt"}}},

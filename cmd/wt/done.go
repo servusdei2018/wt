@@ -88,7 +88,7 @@ Checks are performed before any destructive action:
 			fmt.Println(ui.StyleMuted.Render(fmt.Sprintf("Removing worktree %q…", branch)))
 
 			if err := git.Remove(path, force); err != nil {
-				return fmt.Errorf("FATAL: git worktree remove failed: %w\nHandle %q manually.", err, path)
+				return fmt.Errorf("FATAL: git worktree remove failed: %w\nHandle %q manually", err, path)
 			}
 			if err := git.Delete(a.repoRoot, branch, force); err != nil {
 				return fmt.Errorf("FATAL: git branch delete failed: %w", err)

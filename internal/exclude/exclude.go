@@ -21,7 +21,9 @@ func Ensure(repoRoot, pattern string) error {
 
 	// Check for existing pattern.
 	if f, err := os.Open(path); err == nil {
-		defer f.Close()
+		defer func() {
+			_ = f.Close()
+		}()
 		sc := bufio.NewScanner(f)
 		for sc.Scan() {
 			if strings.TrimSpace(sc.Text()) == pattern {
@@ -35,7 +37,9 @@ func Ensure(repoRoot, pattern string) error {
 	if err != nil {
 		return fmt.Errorf("exclude: open: %w", err)
 	}
-	defer f.Close()
+	defer func() {
+		_ = f.Close()
+	}()
 	_, err = fmt.Fprintf(f, "\n# managed by wt\n%s\n", pattern)
 	return err
 }
