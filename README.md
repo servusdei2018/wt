@@ -73,12 +73,17 @@ remote = "origin"
 
 ### Post-Create Hook Detection Priority
 
-When `hooks.post_create` is not set, wt detects the environment automatically:
+When `hooks.post_create` is not set, wt detects the environment automatically based on the following priority:
 
-1. `package.json` present — runs `npm install`
-2. `go.mod` present — runs `go mod download`
-3. `requirements.txt` present — runs `pip install -r requirements.txt`
-4. `pyproject.toml` present — runs `pip install -e .`
+1. `pnpm-lock.yaml` — runs `pnpm install`
+2. `bun.lockb` or `bun.lock` — runs `bun install`
+3. `yarn.lock` — runs `yarn install`
+4. `uv.lock` — runs `uv sync`
+5. `deno.json` or `deno.jsonc` — runs `deno install`
+6. `package.json` — runs `npm install`
+7. `go.mod` — runs `go mod download`
+8. `requirements.txt` — runs `pip install -r requirements.txt`
+9. `pyproject.toml` — runs `pip install -e .`
 
 ### Base Branch Auto-Detection
 
