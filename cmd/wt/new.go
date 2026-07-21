@@ -4,9 +4,12 @@ import (
 	"fmt"
 	"path/filepath"
 
+	"strings"
+
 	"github.com/servusdei2018/wt/internal/editor"
 	"github.com/servusdei2018/wt/internal/git"
 	"github.com/servusdei2018/wt/internal/hook"
+	"github.com/servusdei2018/wt/internal/seed"
 	"github.com/servusdei2018/wt/internal/storage"
 	"github.com/servusdei2018/wt/internal/ui"
 
@@ -60,6 +63,15 @@ go mod download, etc.) or configured in .wt.toml.`,
 				if err == nil && seedStats.FilesTotal > 0 {
 					fmt.Println(ui.StyleMuted.Render(fmt.Sprintf("Seeded %d heavy dependency files (%s) via CoW reflink", seedStats.FilesTotal, ui.FormatSize(seedStats.BytesTotal))))
 				}
+			}
+
+			// Copy local config and secret files with variable interpolation
+			fileSeedReport, err := seed.SeedFiles(a.repoRoot, path, branch, a.cfg.Seed)
+			if err != nil {
+				return fmt.Errorf("seed files failed: %w", err)
+			}
+			if fileSeedReport.Count() > 0 {
+				fmt.Println(ui.StyleMuted.Render(fmt.Sprintf("Seeded %d config file(s) into worktree (%s)", fileSeedReport.Count(), strings.Join(fileSeedReport.FilesCopied, ", "))))
 			}
 
 			// Detect and run post-create hook.

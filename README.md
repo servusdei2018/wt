@@ -95,7 +95,24 @@ dedupe_on_create = true
 require_reflink = false
 # List of heavy dependency directory names to target.
 heavy_dirs = ["node_modules", "vendor", ".venv", "venv", "__pycache__", ".gradle", "target", ".build", ".tox"]
+
+[seed]
+# Copy local config & secret files from repo root into new worktrees (default: [".env", ".env.local"]).
+# Text files support Go template interpolation (e.g. {{ .Branch }}, {{ .Port }}).
+include = [".env", ".env.local", "config/secrets.json"]
 ```
+
+### Seed File Copying & Environment Secrets
+
+When creating a new worktree with `wt new`, `wt` automatically copies uncommitted local configuration files (`.env`, `.env.local`, etc.) from the main repository root into the new worktree before post-creation hooks run.
+
+Text configuration files support Go template interpolation for dynamic local environments:
+- `{{ .Branch }}` — Feature branch name (e.g. `feature/login`)
+- `{{ .BranchSlug }}` — Sanitized web-safe branch slug (e.g. `feature-login`)
+- `{{ .Port }}` — Deterministically assigned unique port (`3000–8999`)
+- `{{ .WorktreePath }}` — Absolute path of the new worktree
+- `{{ .WorktreeName }}` — Directory basename of the worktree
+- `{{ .RepoRoot }}` — Path to the main repository root
 
 ### Post-Create Hook Detection Priority
 

@@ -58,6 +58,9 @@ command = "code"                   # Editor binary for `wt new --open`
 [sync]
 base_branch = "main"               # Default base branch (default: auto-detected remote HEAD)
 remote = "origin"                  # Remote name (default: "origin")
+
+[seed]
+include = [".env", ".env.local"]   # Uncommitted config files to copy & interpolate ({{ .Branch }}, {{ .Port }})
 ```
 
 ### Post-Create Hook Priority

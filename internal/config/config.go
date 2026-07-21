@@ -34,12 +34,18 @@ type StorageConfig struct {
 	HeavyDirs      []string `toml:"heavy_dirs"`
 }
 
+// SeedConfig holds seed file copy settings.
+type SeedConfig struct {
+	Include []string `toml:"include"`
+}
+
 // Config is the top-level representation of .wt.toml.
 type Config struct {
 	Hooks   HooksConfig   `toml:"hooks"`
 	Editor  EditorConfig  `toml:"editor"`
 	Sync    SyncConfig    `toml:"sync"`
 	Storage StorageConfig `toml:"storage"`
+	Seed    SeedConfig    `toml:"seed"`
 }
 
 func defaults() *Config {
@@ -52,6 +58,9 @@ func defaults() *Config {
 				"node_modules", "vendor", ".venv", "venv",
 				"__pycache__", ".gradle", "target", ".build", ".tox",
 			},
+		},
+		Seed: SeedConfig{
+			Include: []string{".env", ".env.local"},
 		},
 	}
 }

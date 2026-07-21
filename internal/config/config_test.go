@@ -21,6 +21,9 @@ func TestLoadDefaults(t *testing.T) {
 	if len(cfg.Storage.HeavyDirs) == 0 {
 		t.Errorf("cfg.Storage.HeavyDirs is empty, expected defaults")
 	}
+	if len(cfg.Seed.Include) != 2 || cfg.Seed.Include[0] != ".env" || cfg.Seed.Include[1] != ".env.local" {
+		t.Errorf("cfg.Seed.Include = %v, want [.env .env.local]", cfg.Seed.Include)
+	}
 }
 
 func TestLoadCustomConfig(t *testing.T) {
@@ -40,6 +43,9 @@ remote = "upstream"
 dedupe_on_create = false
 require_reflink = true
 heavy_dirs = ["node_modules", "vendor"]
+
+[seed]
+include = [".env.local", "config/local.json"]
 `
 	if err := os.WriteFile(filepath.Join(tmpDir, ".wt.toml"), []byte(content), 0o644); err != nil {
 		t.Fatal(err)
@@ -70,6 +76,9 @@ heavy_dirs = ["node_modules", "vendor"]
 	}
 	if len(cfg.Storage.HeavyDirs) != 2 || cfg.Storage.HeavyDirs[0] != "node_modules" {
 		t.Errorf("cfg.Storage.HeavyDirs = %v, want [node_modules vendor]", cfg.Storage.HeavyDirs)
+	}
+	if len(cfg.Seed.Include) != 2 || cfg.Seed.Include[0] != ".env.local" || cfg.Seed.Include[1] != "config/local.json" {
+		t.Errorf("cfg.Seed.Include = %v, want [.env.local config/local.json]", cfg.Seed.Include)
 	}
 }
 
