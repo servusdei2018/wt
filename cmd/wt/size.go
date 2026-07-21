@@ -57,7 +57,8 @@ func heavyDirsBlock(dirs []wtfs.HeavyDir) string {
 		return ""
 	}
 	var sb strings.Builder
-	sb.WriteString("\n\n" + ui.StyleWarning.Render("  Heavy directories:"))
+	sb.WriteString("\n\n")
+	sb.WriteString(ui.StyleWarning.Render("  Heavy directories:"))
 	for _, d := range dirs {
 		fmt.Fprintf(&sb, "\n    %s  %s", ui.StyleWarning.Render(d.RelPath), ui.StyleMuted.Render(ui.FormatSize(d.Size)))
 	}

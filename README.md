@@ -97,6 +97,14 @@ When `sync.base_branch` is not set in `.wt.toml`, wt queries `git remote show
 origin` to determine the remote HEAD branch. This handles repositories using
 `main`, `master`, or any custom trunk name. Falls back to `main` if the remote is unreachable.
 
+## Agent Skill
+
+`wt` includes a [`SKILL.md`](SKILL.md) for AI coding agents. You may install it like so:
+
+```
+$ npx skills add vercel-labs/agent-skills
+```
+
 ## License
 
 `wt` is distributed under the MIT License. See [LICENSE](LICENSE).
