@@ -22,7 +22,8 @@ called out specifically so you can identify bloated trees that are safe to
 garbage-collect with 'wt done'.`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			worktreesDir := a.worktreesDir()
-			reports, err := wtfs.Scan(worktreesDir)
+			cacheDir := filepath.Join(a.repoRoot, ".git", "wt", "cache")
+			reports, err := wtfs.ScanWithCache(worktreesDir, cacheDir)
 			if err != nil {
 				return fmt.Errorf("size scan: %w", err)
 			}

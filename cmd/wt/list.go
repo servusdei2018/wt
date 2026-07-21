@@ -2,12 +2,14 @@ package main
 
 import (
 	"fmt"
+	"runtime"
 	"time"
 
 	"github.com/servusdei2018/wt/internal/git"
 	"github.com/servusdei2018/wt/internal/ui"
 
 	"github.com/spf13/cobra"
+	"golang.org/x/sync/errgroup"
 )
 
 func (a *app) listCmd() *cobra.Command {
@@ -27,18 +29,31 @@ you will be prompted to run 'git worktree prune'.`,
 				return err
 			}
 
-			var enriched []ui.EnrichedWorktree
+			enriched := make([]ui.EnrichedWorktree, len(worktrees))
 			for i, wt := range worktrees {
-				e := ui.EnrichedWorktree{
+				enriched[i] = ui.EnrichedWorktree{
 					Worktree: wt,
 					Index:    i + 1,
 				}
-				if !wt.IsPrunable && wt.Branch != "" && wt.Branch != "(detached)" {
-					e.Age, _ = git.Age(a.repoRoot, wt.Branch)
-					e.Status, _ = git.Get(wt.Path)
-				}
-				enriched = append(enriched, e)
 			}
+
+			var g errgroup.Group
+			g.SetLimit(runtime.GOMAXPROCS(0) * 4)
+
+			for i, wt := range worktrees {
+				if wt.IsPrunable || wt.Branch == "" || wt.Branch == "(detached)" {
+					continue
+				}
+				i, wt := i, wt
+				g.Go(func() error {
+					age, _ := git.Age(a.repoRoot, wt.Branch)
+					status, _ := git.Get(wt.Path)
+					enriched[i].Age = age
+					enriched[i].Status = status
+					return nil
+				})
+			}
+			_ = g.Wait()
 
 			pruneConfirmed, err := ui.RunList(enriched)
 			if err != nil {

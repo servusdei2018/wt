@@ -102,7 +102,7 @@ origin` to determine the remote HEAD branch. This handles repositories using
 `wt` includes a [`SKILL.md`](SKILL.md) for AI coding agents. You may install it like so:
 
 ```
-$ npx skills add vercel-labs/agent-skills
+$ npx skills add servusdei2018/wt
 ```
 
 ## License
