@@ -41,6 +41,8 @@ func (a *app) worktreePath(branch string) string {
 	return filepath.Join(a.worktreesDir(), branch)
 }
 
+var version = "dev"
+
 func main() {
 	a := &app{}
 
@@ -48,6 +50,7 @@ func main() {
 		Use:          "wt",
 		Short:        "Git worktree manager",
 		Long:         `wt manages Git worktrees.`,
+		Version:      version,
 		SilenceUsage: true,
 		PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
 			// Skip repo checks for commands that don't need a repo context.
