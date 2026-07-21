@@ -19,27 +19,42 @@ func Ensure(repoRoot, pattern string) error {
 		return fmt.Errorf("exclude: mkdir: %w", err)
 	}
 
-	// Check for existing pattern.
-	if f, err := os.Open(path); err == nil {
-		defer func() {
-			_ = f.Close()
-		}()
-		sc := bufio.NewScanner(f)
-		for sc.Scan() {
-			if strings.TrimSpace(sc.Text()) == pattern {
-				return nil
-			}
-		}
+	// Check for existing pattern in a separate scope to close file promptly.
+	if present, err := containsPattern(path, pattern); err == nil && present {
+		return nil
 	}
 
-	// Append.
+	// Append pattern.
 	f, err := os.OpenFile(path, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0o644)
 	if err != nil {
 		return fmt.Errorf("exclude: open: %w", err)
 	}
+
+	_, writeErr := fmt.Fprintf(f, "\n# managed by wt\n%s\n", pattern)
+	closeErr := f.Close()
+	if writeErr != nil {
+		return writeErr
+	}
+	if closeErr != nil {
+		return fmt.Errorf("exclude: close: %w", closeErr)
+	}
+	return nil
+}
+
+func containsPattern(path, pattern string) (bool, error) {
+	f, err := os.Open(path)
+	if err != nil {
+		return false, err
+	}
 	defer func() {
 		_ = f.Close()
 	}()
-	_, err = fmt.Fprintf(f, "\n# managed by wt\n%s\n", pattern)
-	return err
+
+	sc := bufio.NewScanner(f)
+	for sc.Scan() {
+		if strings.TrimSpace(sc.Text()) == pattern {
+			return true, nil
+		}
+	}
+	return false, sc.Err()
 }

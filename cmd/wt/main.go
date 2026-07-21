@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/servusdei2018/wt/internal/config"
 	"github.com/servusdei2018/wt/internal/exclude"
@@ -36,9 +37,25 @@ func (a *app) worktreesDir() string {
 	return filepath.Join(a.repoRoot, ".worktrees")
 }
 
-// worktreePath returns the canonical path for a named worktree.
-func (a *app) worktreePath(branch string) string {
-	return filepath.Join(a.worktreesDir(), branch)
+// worktreePath returns the canonical path for a named worktree and prevents path traversal.
+func (a *app) worktreePath(branch string) (string, error) {
+	wtDir := a.worktreesDir()
+	path := filepath.Clean(filepath.Join(wtDir, branch))
+	rel, err := filepath.Rel(wtDir, path)
+	if err != nil || strings.HasPrefix(rel, "..") || rel == "." {
+		return "", fmt.Errorf("invalid branch path outside worktrees directory: %q", branch)
+	}
+	return path, nil
+}
+
+func isNoRepoCommand(cmd *cobra.Command) bool {
+	for c := cmd; c != nil; c = c.Parent() {
+		switch c.Name() {
+		case "help", "completion", "man":
+			return true
+		}
+	}
+	return false
 }
 
 var version = "dev"
@@ -54,7 +71,7 @@ func main() {
 		SilenceUsage: true,
 		PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
 			// Skip repo checks for commands that don't need a repo context.
-			if cmd.Name() == "help" {
+			if isNoRepoCommand(cmd) {
 				return nil
 			}
 

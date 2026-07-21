@@ -59,7 +59,7 @@ manually before running 'git rebase --continue'.`,
 			}
 
 			fmt.Println(ui.StyleSuccessBox.Render(
-				ui.StyleSuccess.Render(ui.IndicatorClean+" Synced") + "\n" +
+				ui.StyleSuccess.Render("Synced") + "\n" +
 					ui.StyleMuted.Render("  rebased onto ") + ui.StyleBranch.Render(remoteBase),
 			))
 			return nil

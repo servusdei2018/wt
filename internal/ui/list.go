@@ -5,10 +5,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/servusdei2018/wt/internal/git"
-
-	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
+	"github.com/servusdei2018/wt/internal/git"
 )
 
 // EnrichedWorktree combines raw worktree data with computed display fields.
@@ -19,124 +17,73 @@ type EnrichedWorktree struct {
 	Index  int
 }
 
-// listModel is a bubbletea model that renders the enriched worktree table.
-type listModel struct {
-	items       []EnrichedWorktree
-	width       int
-	hasPrunable bool
-	// prune prompt state
-	pruneAsked bool
-	pruneDone  bool
-	PruneYes   bool
-}
-
-func newListModel(items []EnrichedWorktree) listModel {
-	m := listModel{items: items}
-	for _, it := range items {
-		if it.IsPrunable {
-			m.hasPrunable = true
-			break
-		}
-	}
-	return m
-}
-
-func (m listModel) Init() tea.Cmd { return nil }
-
-func (m listModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
-	switch msg := msg.(type) {
-	case tea.WindowSizeMsg:
-		m.width = msg.Width
-	case tea.KeyMsg:
-		if !m.hasPrunable {
-			return m, tea.Quit
-		}
-		if !m.pruneAsked {
-			m.pruneAsked = true
-			return m, nil
-		}
-		switch msg.String() {
-		case "y", "Y":
-			m.PruneYes = true
-			m.pruneDone = true
-		default:
-			m.pruneDone = true
-		}
-		return m, tea.Quit
-	}
-	return m, nil
-}
-
-func (m listModel) View() string {
+// RenderList formats the worktree table into a string.
+func RenderList(items []EnrichedWorktree) string {
 	var sb strings.Builder
 
-	// Derive column widths dynamically.
-	maxBranch := len("Branch")
-	for _, it := range m.items {
-		if l := len(it.Branch); l > maxBranch {
-			maxBranch = l
+	// Derive column widths dynamically
+	maxBranch := lipgloss.Width("Branch")
+	for _, it := range items {
+		if w := lipgloss.Width(it.Branch); w > maxBranch {
+			maxBranch = w
 		}
 	}
 
 	// Header.
-	sb.WriteString("\n" + StyleHeader.Render("  Worktrees") + "\n\n")
+	sb.WriteString("\n  " + StyleHeader.Render("Worktrees") + "\n\n")
 
-	colFmt := fmt.Sprintf("  %%3s  %%-%ds  %%-7s  %%-8s  %%-6s  %%s", maxBranch)
+	// Index col header is 5 visible chars ("  #  ") to align with "* [1]" or "  [1]"
+	colFmt := fmt.Sprintf("  %%-5s  %%-%ds  %%-7s  %%-8s  %%-8s  %%s", maxBranch)
 	header := fmt.Sprintf(colFmt, "#", "Branch", "HEAD", "Age", "Status", "Path")
-	sb.WriteString(StyleMuted.Render(header) + "\n")
+	sb.WriteString(StyleMuted.Render(header))
+	sb.WriteString("\n")
 
-	sep := "  " + strings.Repeat("─", 3) + "  " +
+	sep := "  " + strings.Repeat("─", 5) + "  " +
 		strings.Repeat("─", maxBranch) + "  " +
 		strings.Repeat("─", 7) + "  " +
 		strings.Repeat("─", 8) + "  " +
-		strings.Repeat("─", 6) + "  " +
+		strings.Repeat("─", 8) + "  " +
 		strings.Repeat("─", 20)
-	sb.WriteString(StyleMuted.Render(sep) + "\n")
+	sb.WriteString(StyleMuted.Render(sep))
+	sb.WriteString("\n")
 
 	// Rows.
-	for _, it := range m.items {
+	for _, it := range items {
 		index := fmt.Sprintf("[%d]", it.Index)
 		branch := it.Branch
 		head := it.HEAD
 		age := FormatAge(it.Age)
-		if it.IsPrunable {
-			age = StyleDanger.Render("prunable")
-		}
 
 		var statusStr string
 		switch {
 		case it.IsPrunable:
-			statusStr = StyleDanger.Render(IndicatorPrunable + " broken")
+			statusStr = StyleDanger.Render("broken")
+			age = StyleDanger.Render("prunable")
 		case it.Status.IsDirty:
-			statusStr = StyleWarning.Render(IndicatorDirty + " dirty ")
+			statusStr = StyleWarning.Render("dirty")
 		default:
-			statusStr = StyleSuccess.Render(IndicatorClean + " clean ")
+			statusStr = StyleSuccess.Render("clean")
 		}
 
 		var branchStr, indexStr string
 		if it.IsMain {
-			indexStr = StyleCurrent.Render(IndicatorCurrent + " " + index)
+			indexStr = StyleCurrent.Render("* " + index)
 			branchStr = StyleCurrent.Render(branch)
 		} else {
 			indexStr = StyleMuted.Render("  " + index)
 			branchStr = StyleBranch.Render(branch)
 		}
 
-		// Pad branch to column width (lipgloss renders ANSI so we manually pad).
-		branchPadded := branchStr + strings.Repeat(" ", max(0, maxBranch-len(branch)))
+		// Pad columns taking ANSI / display width into account
+		branchPadded := branchStr + strings.Repeat(" ", max(0, maxBranch-lipgloss.Width(branch)))
+		headPadded := head + strings.Repeat(" ", max(0, 7-lipgloss.Width(head)))
+		agePadded := age + strings.Repeat(" ", max(0, 8-lipgloss.Width(age)))
+		statusPadded := statusStr + strings.Repeat(" ", max(0, 8-lipgloss.Width(statusStr)))
 
-		row := fmt.Sprintf("  %s  %s  %-7s  %-8s  %s  %s",
-			indexStr, branchPadded, head, age, statusStr, StyleMuted.Render(it.Path))
-		sb.WriteString(row + "\n")
-	}
-
-	// Prune prompt.
-	if m.hasPrunable && !m.pruneDone {
-		msg := StyleWarningBox.Render(
-			StyleWarning.Render("Orphaned worktrees detected.") +
-				"\nRun " + StyleBranch.Render("git worktree prune") + "? [y/N] ",
-		)
-		sb.WriteString("\n" + msg + "\n")
+		row := fmt.Sprintf("  %s  %s  %s  %s  %s  %s",
+			indexStr, branchPadded, headPadded, agePadded, statusPadded, StyleMuted.Render(it.Path))
+		sb.WriteString(row)
+		sb.WriteString("\n")
 	}
 
 	sb.WriteString("\n")
@@ -146,14 +93,18 @@ func (m listModel) View() string {
 // RunList renders the worktree table and, if prunable entries exist, asks the
 // user whether to prune. Returns true if the user confirmed pruning.
 func RunList(items []EnrichedWorktree) (bool, error) {
-	m := newListModel(items)
-	p := tea.NewProgram(m, tea.WithOutput(lipgloss.DefaultRenderer().Output()))
-	final, err := p.Run()
-	if err != nil {
-		return false, err
+	fmt.Print(RenderList(items))
+
+	hasPrunable := false
+	for _, it := range items {
+		if it.IsPrunable {
+			hasPrunable = true
+			break
+		}
 	}
-	if lm, ok := final.(listModel); ok {
-		return lm.PruneYes, nil
+
+	if hasPrunable {
+		return Confirm("Orphaned worktrees detected.", "Run 'git worktree prune'?")
 	}
 	return false, nil
 }

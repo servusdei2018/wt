@@ -17,9 +17,7 @@ var (
 	colorAccent  = lipgloss.Color("#38BDF8") // sky blue — current worktree
 
 	// Status indicator glyphs.
-	IndicatorDirty    = "✖"
-	IndicatorClean    = "✔"
-	IndicatorCurrent  = "▶"
+	IndicatorCurrent  = "*"
 	IndicatorPrunable = "!"
 
 	// Base styles — composable building blocks.

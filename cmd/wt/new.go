@@ -31,7 +31,14 @@ go mod download, etc.) or configured in .wt.toml.`,
 		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			branch := args[0]
-			path := a.worktreePath(branch)
+			if err := git.ValidateBranch(branch); err != nil {
+				return err
+			}
+
+			path, err := a.worktreePath(branch)
+			if err != nil {
+				return err
+			}
 
 			// Resolve the ref to branch from.
 			ref := fromRef
@@ -60,7 +67,7 @@ go mod download, etc.) or configured in .wt.toml.`,
 
 			relPath, _ := filepath.Rel(a.repoRoot, path)
 			fmt.Println(ui.StyleSuccessBox.Render(
-				ui.StyleSuccess.Render(ui.IndicatorClean+" Worktree ready") + "\n" +
+				ui.StyleSuccess.Render("Worktree ready") + "\n" +
 					ui.StyleMuted.Render("  branch  ") + ui.StyleBranch.Render(branch) + "\n" +
 					ui.StyleMuted.Render("  path    ") + relPath,
 			))

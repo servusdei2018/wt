@@ -16,7 +16,7 @@ func (a *app) refreshCmd() *cobra.Command {
 		Long: `A non-intrusive background update.
 
 Runs git fetch --all and then fast-forwards the local base branch pointer to
-match the remote — without touching your current worktree or requiring a
+match the remote, without touching your current worktree or requiring a
 checkout. You stay exactly where you are.`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			remote := a.cfg.Sync.Remote
@@ -36,7 +36,7 @@ checkout. You stay exactly where you are.`,
 			}
 
 			fmt.Println(ui.StyleSuccessBox.Render(
-				ui.StyleSuccess.Render(ui.IndicatorClean+" Refreshed") + "\n" +
+				ui.StyleSuccess.Render("Refreshed") + "\n" +
 					ui.StyleMuted.Render("  remote  ") + ui.StyleBranch.Render(remote) + "\n" +
 					ui.StyleMuted.Render("  base    ") + ui.StyleBranch.Render(base),
 			))

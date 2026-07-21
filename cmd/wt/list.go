@@ -14,7 +14,7 @@ func (a *app) listCmd() *cobra.Command {
 	return &cobra.Command{
 		Use:   "list",
 		Short: "List all worktrees with status and age",
-		Long: `Displays an enriched, colour-coded table of all active worktrees.
+		Long: `Displays a table of all active worktrees.
 
 Each row shows an index shortcut, branch name, HEAD SHA, age since last commit,
 dirty/clean status, and the worktree path.
@@ -51,7 +51,7 @@ you will be prompted to run 'git worktree prune'.`,
 					return err
 				}
 				fmt.Println(ui.StyleSuccessBox.Render(
-					ui.StyleSuccess.Render(ui.IndicatorClean + " Pruned orphaned worktrees."),
+					ui.StyleSuccess.Render("Pruned orphaned worktrees."),
 				))
 			}
 			return nil

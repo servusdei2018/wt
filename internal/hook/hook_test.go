@@ -23,7 +23,7 @@ func TestDetect(t *testing.T) {
 					PostCreate: "echo hello",
 				},
 			},
-			wantHook: &Hook{Name: "custom", Command: []string{"echo hello"}},
+			wantHook: &Hook{Name: "custom", Command: []string{"echo hello"}, IsCustom: true},
 		},
 		{
 			name:     "npm fallback",

@@ -30,8 +30,14 @@ Checks are performed before any destructive action:
 			if err != nil {
 				return err
 			}
+			if err := git.ValidateBranch(branch); err != nil {
+				return err
+			}
 
-			path := a.worktreePath(branch)
+			path, err := a.worktreePath(branch)
+			if err != nil {
+				return err
+			}
 			base := a.baseBranch()
 			force := false
 
@@ -98,7 +104,7 @@ Checks are performed before any destructive action:
 
 			relPath, _ := filepath.Rel(a.repoRoot, path)
 			fmt.Println(ui.StyleSuccessBox.Render(
-				ui.StyleSuccess.Render(ui.IndicatorClean+" Done") + "\n" +
+				ui.StyleSuccess.Render("Done") + "\n" +
 					ui.StyleMuted.Render("  branch  ") + ui.StyleBranch.Render(branch) + "\n" +
 					ui.StyleMuted.Render("  removed ") + relPath,
 			))

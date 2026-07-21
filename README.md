@@ -18,7 +18,7 @@ cd wt && make
 
 # Place the binary where you keep your executables
 # Ensure this directory is in your $PATH
-cp wt/bin/wt ~/.local/bin
+cp bin/wt ~/.local/bin
 ```
 
 Shell completions and man pages are available via the hidden `completion` and `man` subcommands added automatically:
