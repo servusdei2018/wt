@@ -4,6 +4,12 @@
 
 ## Installation
 
+### Homebrew (macOS & Linux)
+
+```bash
+brew install servusdei2018/tap/wt
+```
+
 ### Building from Source
 
 ```
