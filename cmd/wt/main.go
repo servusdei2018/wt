@@ -9,7 +9,6 @@ import (
 	"strings"
 
 	"github.com/servusdei2018/wt/internal/config"
-	"github.com/servusdei2018/wt/internal/exclude"
 	"github.com/servusdei2018/wt/internal/git"
 
 	"github.com/charmbracelet/fang"
@@ -19,17 +18,21 @@ import (
 // app holds shared state derived during PersistentPreRunE and referenced by
 // all subcommand closures.
 type app struct {
-	repoRoot string
-	cfg      *config.Config
+	repoRoot   string
+	cfg        *config.Config
+	cachedBase string
 }
 
 // baseBranch returns the effective base branch: config override or auto-detected
 // from the remote HEAD.
-func (a *app) baseBranch() string {
+func (a *app) baseBranch(ctx context.Context) string {
 	if a.cfg.Sync.BaseBranch != "" {
 		return a.cfg.Sync.BaseBranch
 	}
-	return git.DetectBase(a.repoRoot)
+	if a.cachedBase == "" {
+		a.cachedBase = git.DetectBase(ctx, a.repoRoot)
+	}
+	return a.cachedBase
 }
 
 // worktreesDir returns the absolute path of the .worktrees/ directory.
@@ -39,9 +42,14 @@ func (a *app) worktreesDir() string {
 
 // worktreePath returns the canonical path for a named worktree and prevents path traversal.
 func (a *app) worktreePath(branch string) (string, error) {
-	wtDir := a.worktreesDir()
-	path := filepath.Clean(filepath.Join(wtDir, branch))
-	rel, err := filepath.Rel(wtDir, path)
+	resolvedRepoRoot, err := filepath.EvalSymlinks(a.repoRoot)
+	if err != nil {
+		resolvedRepoRoot = filepath.Clean(a.repoRoot)
+	}
+	resolvedWtDir := filepath.Join(resolvedRepoRoot, ".worktrees")
+
+	path := filepath.Clean(filepath.Join(resolvedWtDir, branch))
+	rel, err := filepath.Rel(resolvedWtDir, path)
 	if err != nil || strings.HasPrefix(rel, "..") || rel == "." {
 		return "", fmt.Errorf("invalid branch path outside worktrees directory: %q", branch)
 	}
@@ -49,6 +57,11 @@ func (a *app) worktreePath(branch string) (string, error) {
 }
 
 func isNoRepoCommand(cmd *cobra.Command) bool {
+	if cmd.Flags().Lookup("help") != nil {
+		if helpVal, err := cmd.Flags().GetBool("help"); err == nil && helpVal {
+			return true
+		}
+	}
 	for c := cmd; c != nil; c = c.Parent() {
 		switch c.Name() {
 		case "help", "completion", "man":
@@ -75,18 +88,11 @@ func main() {
 				return nil
 			}
 
-			root, err := git.RepoRoot()
+			root, err := git.RepoRoot(cmd.Context())
 			if err != nil {
 				return fmt.Errorf("not inside a git repository")
 			}
 			a.repoRoot = root
-
-			if err := os.MkdirAll(filepath.Join(root, ".worktrees"), 0o755); err != nil {
-				return fmt.Errorf("could not create .worktrees/: %w", err)
-			}
-			if err := exclude.Ensure(root, ".worktrees/*"); err != nil {
-				return fmt.Errorf("could not update .git/info/exclude: %w", err)
-			}
 
 			cfg, err := config.Load(root)
 			if err != nil {

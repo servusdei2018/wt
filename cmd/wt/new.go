@@ -2,11 +2,13 @@ package main
 
 import (
 	"fmt"
+	"os"
 	"path/filepath"
 
 	"strings"
 
 	"github.com/servusdei2018/wt/internal/editor"
+	"github.com/servusdei2018/wt/internal/exclude"
 	"github.com/servusdei2018/wt/internal/git"
 	"github.com/servusdei2018/wt/internal/hook"
 	"github.com/servusdei2018/wt/internal/seed"
@@ -34,9 +36,18 @@ A post-creation hook is run automatically if one is detected (npm install,
 go mod download, etc.) or configured in .wt.toml.`,
 		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
+			ctx := cmd.Context()
 			branch := args[0]
-			if err := git.ValidateBranch(branch); err != nil {
+			if err := git.ValidateBranch(ctx, branch); err != nil {
 				return err
+			}
+
+			// Ensure worktrees directory and exclude file setup.
+			if err := os.MkdirAll(filepath.Join(a.repoRoot, ".worktrees"), 0o755); err != nil {
+				return fmt.Errorf("could not create .worktrees/: %w", err)
+			}
+			if err := exclude.Ensure(ctx, a.repoRoot, ".worktrees/*"); err != nil {
+				return fmt.Errorf("could not update .git/info/exclude: %w", err)
 			}
 
 			path, err := a.worktreePath(branch)
@@ -47,13 +58,13 @@ go mod download, etc.) or configured in .wt.toml.`,
 			// Resolve the ref to branch from.
 			ref := fromRef
 			if ref == "" {
-				base := a.baseBranch()
+				base := a.baseBranch(ctx)
 				ref = fmt.Sprintf("origin/%s", base)
 			}
 
 			fmt.Println(ui.StyleMuted.Render(fmt.Sprintf("Creating worktree for branch %q from %s…", branch, ref)))
 
-			if err := git.Add(a.repoRoot, branch, path, ref); err != nil {
+			if err := git.Add(ctx, a.repoRoot, branch, path, ref); err != nil {
 				return fmt.Errorf("worktree add failed: %w", err)
 			}
 
@@ -96,7 +107,7 @@ go mod download, etc.) or configured in .wt.toml.`,
 			if open {
 				ed := editor.Resolve(a.cfg)
 				fmt.Println(ui.StyleMuted.Render(fmt.Sprintf("Opening %s in %s…", relPath, ed)))
-				return editor.Open(ed, path)
+				return editor.Open(ctx, ed, path)
 			}
 			return nil
 		},

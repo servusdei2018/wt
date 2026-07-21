@@ -24,29 +24,30 @@ Steps:
 If rebase conflicts occur, wt pauses and instructs you to resolve them
 manually before running 'git rebase --continue'.`,
 		RunE: func(cmd *cobra.Command, args []string) error {
+			ctx := cmd.Context()
 			cwd, err := os.Getwd()
 			if err != nil {
 				return err
 			}
 
 			remote := a.cfg.Sync.Remote
-			base := a.baseBranch()
+			base := a.baseBranch(ctx)
 			remoteBase := fmt.Sprintf("%s/%s", remote, base)
 
 			fmt.Println(ui.StyleMuted.Render(fmt.Sprintf("Fetching from %s…", remote)))
-			if _, err := git.Run(git.RunOpts{Dir: a.repoRoot}, "fetch", remote); err != nil {
+			if _, err := git.Run(git.RunOpts{Ctx: ctx, Dir: a.repoRoot}, "fetch", remote); err != nil {
 				return fmt.Errorf("fetch failed: %w", err)
 			}
 
 			fmt.Println(ui.StyleMuted.Render(fmt.Sprintf("Updating local %s…", base)))
-			if _, err := git.Run(git.RunOpts{Dir: a.repoRoot},
+			if _, err := git.Run(git.RunOpts{Ctx: ctx, Dir: a.repoRoot},
 				"fetch", remote, fmt.Sprintf("%s:%s", base, base)); err != nil {
 				// Non-fatal: local branch may not exist yet.
 				fmt.Println(ui.StyleWarning.Render(fmt.Sprintf("  note: could not fast-forward local %s", base)))
 			}
 
 			fmt.Println(ui.StyleMuted.Render(fmt.Sprintf("Rebasing onto %s…", remoteBase)))
-			if _, err := git.Run(git.RunOpts{Dir: cwd}, "rebase", remoteBase); err != nil {
+			if _, err := git.Run(git.RunOpts{Ctx: ctx, Dir: cwd}, "rebase", remoteBase); err != nil {
 				return fmt.Errorf(
 					"rebase conflict detected.\n\n"+
 						"Resolve conflicts, then run:\n"+

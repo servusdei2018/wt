@@ -3,17 +3,24 @@ package exclude
 
 import (
 	"bufio"
+	"context"
 	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
+
+	"github.com/servusdei2018/wt/internal/git"
 )
 
 // Ensure idempotently appends pattern to .git/info/exclude.
 // Creates the file and its parent directory if they do not exist.
 // No-ops if the pattern is already present.
-func Ensure(repoRoot, pattern string) error {
-	path := filepath.Join(repoRoot, ".git", "info", "exclude")
+func Ensure(ctx context.Context, repoRoot, pattern string) error {
+	gitDir, err := git.CommonGitDir(ctx, repoRoot)
+	if err != nil {
+		return fmt.Errorf("exclude: %w", err)
+	}
+	path := filepath.Join(gitDir, "info", "exclude")
 
 	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
 		return fmt.Errorf("exclude: mkdir: %w", err)

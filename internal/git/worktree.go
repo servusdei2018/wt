@@ -1,6 +1,7 @@
 package git
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"strings"
@@ -17,8 +18,8 @@ type Worktree struct {
 }
 
 // Add creates a new worktree at path, branching from fromRef.
-func Add(repoRoot, branch, path, fromRef string) error {
-	_, err := Run(RunOpts{Dir: repoRoot}, "worktree", "add", "-b", branch, path, fromRef)
+func Add(ctx context.Context, repoRoot, branch, path, fromRef string) error {
+	_, err := Run(RunOpts{Ctx: ctx, Dir: repoRoot}, "worktree", "add", "-b", branch, path, fromRef)
 	if err != nil {
 		return fmt.Errorf("git worktree add: %w", err)
 	}
@@ -26,21 +27,21 @@ func Add(repoRoot, branch, path, fromRef string) error {
 }
 
 // Remove removes the worktree at path. Pass force=true to allow removal of dirty trees.
-func Remove(path string, force bool) error {
+func Remove(ctx context.Context, path string, force bool) error {
 	args := []string{"worktree", "remove"}
 	if force {
 		args = append(args, "--force")
 	}
 	args = append(args, path)
-	if _, err := Run(RunOpts{}, args...); err != nil {
+	if _, err := Run(RunOpts{Ctx: ctx}, args...); err != nil {
 		return fmt.Errorf("git worktree remove: %w", err)
 	}
 	return nil
 }
 
 // List parses `git worktree list --porcelain` and returns all worktrees.
-func List(repoRoot string) ([]Worktree, error) {
-	out, err := Run(RunOpts{Dir: repoRoot}, "worktree", "list", "--porcelain")
+func List(ctx context.Context, repoRoot string) ([]Worktree, error) {
+	out, err := Run(RunOpts{Ctx: ctx, Dir: repoRoot}, "worktree", "list", "--porcelain")
 	if err != nil {
 		return nil, fmt.Errorf("git worktree list: %w", err)
 	}
@@ -48,8 +49,8 @@ func List(repoRoot string) ([]Worktree, error) {
 }
 
 // Prune removes stale worktree administrative files.
-func Prune(repoRoot string) error {
-	if _, err := Run(RunOpts{Dir: repoRoot}, "worktree", "prune"); err != nil {
+func Prune(ctx context.Context, repoRoot string) error {
+	if _, err := Run(RunOpts{Ctx: ctx, Dir: repoRoot}, "worktree", "prune"); err != nil {
 		return fmt.Errorf("git worktree prune: %w", err)
 	}
 	return nil

@@ -24,7 +24,8 @@ dirty/clean status, and the worktree path.
 Orphaned worktrees (where the directory no longer exists) are highlighted and
 you will be prompted to run 'git worktree prune'.`,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			worktrees, err := git.List(a.repoRoot)
+			ctx := cmd.Context()
+			worktrees, err := git.List(ctx, a.repoRoot)
 			if err != nil {
 				return err
 			}
@@ -46,8 +47,8 @@ you will be prompted to run 'git worktree prune'.`,
 				}
 				i, wt := i, wt
 				g.Go(func() error {
-					age, _ := git.Age(a.repoRoot, wt.Branch)
-					status, _ := git.Get(wt.Path)
+					age, _ := git.Age(ctx, a.repoRoot, wt.Branch)
+					status, _ := git.Get(ctx, wt.Path)
 					enriched[i].Age = age
 					enriched[i].Status = status
 					return nil
@@ -62,7 +63,7 @@ you will be prompted to run 'git worktree prune'.`,
 
 			if pruneConfirmed {
 				fmt.Println(ui.StyleMuted.Render("Running git worktree prune…"))
-				if err := git.Prune(a.repoRoot); err != nil {
+				if err := git.Prune(ctx, a.repoRoot); err != nil {
 					return err
 				}
 				fmt.Println(ui.StyleSuccessBox.Render(

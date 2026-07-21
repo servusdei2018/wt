@@ -2,9 +2,11 @@
 package editor
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"os/exec"
+	"strings"
 
 	"github.com/servusdei2018/wt/internal/config"
 )
@@ -37,8 +39,13 @@ func Resolve(cfg *config.Config) string {
 
 // Open launches editorCmd with path as the sole argument, inheriting
 // the current process stdio so the editor gets a proper terminal.
-func Open(editorCmd, path string) error {
-	cmd := exec.Command(editorCmd, path)
+func Open(ctx context.Context, editorCmd, path string) error {
+	parts := strings.Fields(editorCmd)
+	if len(parts) == 0 {
+		return fmt.Errorf("empty editor command")
+	}
+	args := append(parts[1:], path)
+	cmd := exec.CommandContext(ctx, parts[0], args...)
 	cmd.Stdin = os.Stdin
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr

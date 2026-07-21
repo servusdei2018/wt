@@ -107,7 +107,11 @@ func SeedFiles(repoRoot, targetWorktree, branch string, cfg config.SeedConfig) (
 		if isBinary(content) {
 			finalBytes = content
 		} else {
-			finalBytes = interpolate(cleanRel, content, data)
+			var err error
+			finalBytes, err = interpolate(cleanRel, content, data)
+			if err != nil {
+				return nil, fmt.Errorf("seed file %q interpolation error: %w", cleanRel, err)
+			}
 		}
 
 		if err := os.WriteFile(destPath, finalBytes, srcInfo.Mode().Perm()); err != nil {
@@ -125,16 +129,16 @@ func isBinary(data []byte) bool {
 	return bytes.IndexByte(data[:checkLen], 0) != -1
 }
 
-func interpolate(name string, content []byte, data TemplateData) []byte {
-	tmpl, err := template.New(name).Option("missingkey=default").Parse(string(content))
+func interpolate(name string, content []byte, data TemplateData) ([]byte, error) {
+	tmpl, err := template.New(name).Option("missingkey=error").Parse(string(content))
 	if err != nil {
-		return content
+		return nil, fmt.Errorf("parse: %w", err)
 	}
 
 	var buf bytes.Buffer
 	if err := tmpl.Execute(&buf, data); err != nil {
-		return content
+		return nil, fmt.Errorf("execute: %w", err)
 	}
 
-	return buf.Bytes()
+	return buf.Bytes(), nil
 }

@@ -1,6 +1,7 @@
 package git
 
 import (
+	"context"
 	"fmt"
 	"strings"
 )
@@ -14,8 +15,8 @@ type Status struct {
 }
 
 // Get returns the working-tree status of the worktree at path.
-func Get(worktreePath string) (Status, error) {
-	out, err := Run(RunOpts{Dir: worktreePath}, "status", "--porcelain")
+func Get(ctx context.Context, worktreePath string) (Status, error) {
+	out, err := Run(RunOpts{Ctx: ctx, Dir: worktreePath}, "status", "--porcelain")
 	if err != nil {
 		return Status{}, fmt.Errorf("git status in %s: %w", worktreePath, err)
 	}

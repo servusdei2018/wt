@@ -5,6 +5,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/servusdei2018/wt/internal/git"
 	"github.com/servusdei2018/wt/internal/ui"
 	wtfs "github.com/servusdei2018/wt/pkg/fs"
 
@@ -21,9 +22,16 @@ Heavy dependency directories (node_modules, vendor, .venv, target, etc.) are
 called out specifically so you can identify bloated trees that are safe to
 garbage-collect with 'wt done'.`,
 		RunE: func(cmd *cobra.Command, args []string) error {
+			ctx := cmd.Context()
 			worktreesDir := a.worktreesDir()
-			cacheDir := filepath.Join(a.repoRoot, ".git", "wt", "cache")
-			reports, err := wtfs.ScanWithCache(worktreesDir, cacheDir)
+
+			commonGitDir, err := git.CommonGitDir(ctx, a.repoRoot)
+			if err != nil {
+				commonGitDir = filepath.Join(a.repoRoot, ".git")
+			}
+			cacheDir := filepath.Join(commonGitDir, "wt", "cache")
+
+			reports, err := wtfs.ScanWithCache(worktreesDir, cacheDir, a.cfg.Storage.HeavyDirs)
 			if err != nil {
 				return fmt.Errorf("size scan: %w", err)
 			}

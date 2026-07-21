@@ -53,13 +53,13 @@ type CacheStore map[string]CacheEntry
 
 // Scan walks worktreesRoot in parallel and returns one DirReport per immediate
 // subdirectory (i.e. per worktree). It uses default cache location under repo git dir if accessible.
-func Scan(worktreesRoot string) ([]DirReport, error) {
+func Scan(worktreesRoot string, heavyDirs []string) ([]DirReport, error) {
 	cacheDir := filepath.Join(worktreesRoot, "..", ".git", "wt", "cache")
-	return ScanWithCache(worktreesRoot, cacheDir)
+	return ScanWithCache(worktreesRoot, cacheDir, heavyDirs)
 }
 
 // ScanWithCache walks worktreesRoot in parallel and uses cacheDir to cache reports keyed by inode and mtime.
-func ScanWithCache(worktreesRoot, cacheDir string) ([]DirReport, error) {
+func ScanWithCache(worktreesRoot, cacheDir string, heavyDirs []string) ([]DirReport, error) {
 	entries, err := os.ReadDir(worktreesRoot)
 	if err != nil {
 		if os.IsNotExist(err) {
@@ -86,6 +86,16 @@ func ScanWithCache(worktreesRoot, cacheDir string) ([]DirReport, error) {
 	if cacheDir != "" {
 		cacheFile = filepath.Join(cacheDir, "disk_usage.json")
 		cache = loadCache(cacheFile)
+	}
+
+	// Build heavyNames map
+	hNames := make(map[string]bool)
+	if len(heavyDirs) > 0 {
+		for _, name := range heavyDirs {
+			hNames[name] = true
+		}
+	} else {
+		hNames = heavyNames
 	}
 
 	reports := make([]DirReport, len(dirEntries))
@@ -125,7 +135,7 @@ func ScanWithCache(worktreesRoot, cacheDir string) ([]DirReport, error) {
 				return nil
 			}
 
-			report, err := scanDirParallel(dir)
+			report, err := scanDirParallel(dir, hNames)
 			if err != nil {
 				return nil
 			}
@@ -162,7 +172,7 @@ func ScanWithCache(worktreesRoot, cacheDir string) ([]DirReport, error) {
 	return result, nil
 }
 
-func scanDirParallel(root string) (DirReport, error) {
+func scanDirParallel(root string, heavyNames map[string]bool) (DirReport, error) {
 	report := DirReport{Path: root}
 
 	type heavyTask struct {

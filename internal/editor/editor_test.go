@@ -1,6 +1,7 @@
 package editor
 
 import (
+	"context"
 	"testing"
 
 	"github.com/servusdei2018/wt/internal/config"
@@ -35,5 +36,15 @@ func TestResolveVisualEnvVar(t *testing.T) {
 	got := Resolve(cfg)
 	if got != "gvim" {
 		t.Errorf("Resolve() = %q, want %q", got, "gvim")
+	}
+}
+
+func TestOpenWithFlags(t *testing.T) {
+	ctx := context.Background()
+	// Test if Open splits arguments correctly. We can use a simple echo command.
+	// Since echo exits 0, this should succeed.
+	err := Open(ctx, "echo -n", "test-path")
+	if err != nil {
+		t.Errorf("expected no error, got %v", err)
 	}
 }

@@ -1,10 +1,13 @@
 package git
 
 import (
+	"context"
+	"path/filepath"
 	"testing"
 )
 
 func TestValidateBranch(t *testing.T) {
+	ctx := context.Background()
 	tests := []struct {
 		name    string
 		branch  string
@@ -21,11 +24,30 @@ func TestValidateBranch(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			err := ValidateBranch(tt.branch)
+			err := ValidateBranch(ctx, tt.branch)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("ValidateBranch(%q) error = %v, wantErr %v", tt.branch, err, tt.wantErr)
 			}
 		})
+	}
+}
+
+func TestCommonGitDir(t *testing.T) {
+	ctx := context.Background()
+	dir := t.TempDir()
+	// Initialize git repo in dir
+	_, err := Run(RunOpts{Ctx: ctx, Dir: dir}, "init")
+	if err != nil {
+		t.Skip("git init not available:", err)
+	}
+
+	commonDir, err := CommonGitDir(ctx, dir)
+	if err != nil {
+		t.Fatalf("CommonGitDir() error = %v", err)
+	}
+	expected := filepath.Join(dir, ".git")
+	if filepath.Clean(commonDir) != filepath.Clean(expected) {
+		t.Errorf("CommonGitDir() = %q, want %q", commonDir, expected)
 	}
 }
 

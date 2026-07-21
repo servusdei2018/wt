@@ -22,7 +22,7 @@ func TestScanDiskUsage(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	reports, err := Scan(tmpDir)
+	reports, err := Scan(tmpDir, nil)
 	if err != nil {
 		t.Fatalf("Scan() error = %v", err)
 	}
@@ -61,7 +61,7 @@ func TestScanWithCache(t *testing.T) {
 	}
 
 	// First scan creates cache
-	reports1, err := ScanWithCache(worktreesRoot, cacheDir)
+	reports1, err := ScanWithCache(worktreesRoot, cacheDir, nil)
 	if err != nil {
 		t.Fatalf("First ScanWithCache error = %v", err)
 	}
@@ -75,7 +75,7 @@ func TestScanWithCache(t *testing.T) {
 	}
 
 	// Second scan reads from cache
-	reports2, err := ScanWithCache(worktreesRoot, cacheDir)
+	reports2, err := ScanWithCache(worktreesRoot, cacheDir, nil)
 	if err != nil {
 		t.Fatalf("Second ScanWithCache error = %v", err)
 	}
@@ -94,7 +94,7 @@ func TestScanWithCache(t *testing.T) {
 	// Ensure directory mtime updates
 	_ = os.Chtimes(wt1, time.Now().Add(10*time.Second), time.Now().Add(10*time.Second))
 
-	reports3, err := ScanWithCache(worktreesRoot, cacheDir)
+	reports3, err := ScanWithCache(worktreesRoot, cacheDir, nil)
 	if err != nil {
 		t.Fatalf("Third ScanWithCache error = %v", err)
 	}
@@ -106,7 +106,7 @@ func TestScanWithCache(t *testing.T) {
 	if err := os.WriteFile(cacheFile, []byte("{invalid json}"), 0o644); err != nil {
 		t.Fatal(err)
 	}
-	reports4, err := ScanWithCache(worktreesRoot, cacheDir)
+	reports4, err := ScanWithCache(worktreesRoot, cacheDir, nil)
 	if err != nil {
 		t.Fatalf("ScanWithCache with corrupted cache error = %v", err)
 	}

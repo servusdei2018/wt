@@ -175,3 +175,38 @@ func TestSeedFilesPathTraversal(t *testing.T) {
 		}
 	}
 }
+
+func TestSeedFilesInterpolationError(t *testing.T) {
+	repoRoot := t.TempDir()
+	targetWt := t.TempDir()
+
+	// Write an invalid template with unclosed braces or invalid syntax
+	invalidContent := "BRANCH={{ .Branch }\n"
+	if err := os.WriteFile(filepath.Join(repoRoot, ".env"), []byte(invalidContent), 0o600); err != nil {
+		t.Fatal(err)
+	}
+
+	cfg := config.SeedConfig{
+		Include: []string{".env"},
+	}
+
+	_, err := SeedFiles(repoRoot, targetWt, "feat/test", cfg)
+	if err == nil {
+		t.Error("expected error for invalid template syntax, got nil")
+	}
+
+	// Write a template referencing a non-existent variable
+	missingVarContent := "BRANCH={{ .NonExistent }}\n"
+	if err := os.WriteFile(filepath.Join(repoRoot, ".env.missing"), []byte(missingVarContent), 0o600); err != nil {
+		t.Fatal(err)
+	}
+
+	cfg2 := config.SeedConfig{
+		Include: []string{".env.missing"},
+	}
+
+	_, err = SeedFiles(repoRoot, targetWt, "feat/test", cfg2)
+	if err == nil {
+		t.Error("expected error for missing template key, got nil")
+	}
+}
