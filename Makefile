@@ -1,7 +1,7 @@
 BINARY_NAME=wt
 BIN_DIR=bin
 
-.PHONY: all build clean format lint test 
+.PHONY: all build clean format check-format lint test 
 
 all: build
 
@@ -15,10 +15,14 @@ clean:
 format:
 	go fmt ./...
 
+check-format:
+	@test -z "$$(gofmt -s -l .)" || (echo "The following files need formatting:" && gofmt -s -l . && exit 1)
+
 lint:
 	go vet ./...
 	golangci-lint run ./...
 
 test:
 	go test ./...
+
 
