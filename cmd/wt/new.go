@@ -7,6 +7,7 @@ import (
 	"github.com/servusdei2018/wt/internal/editor"
 	"github.com/servusdei2018/wt/internal/git"
 	"github.com/servusdei2018/wt/internal/hook"
+	"github.com/servusdei2018/wt/internal/storage"
 	"github.com/servusdei2018/wt/internal/ui"
 
 	"github.com/spf13/cobra"
@@ -51,6 +52,14 @@ go mod download, etc.) or configured in .wt.toml.`,
 
 			if err := git.Add(a.repoRoot, branch, path, ref); err != nil {
 				return fmt.Errorf("worktree add failed: %w", err)
+			}
+
+			// Pre-seed heavy dependency directories via CoW reflink if enabled
+			if a.cfg.Storage.DedupeOnCreate {
+				seedStats, err := storage.SeedWorktree(a.repoRoot, path, a.cfg.Storage.HeavyDirs, a.cfg.Storage.RequireReflink)
+				if err == nil && seedStats.FilesTotal > 0 {
+					fmt.Println(ui.StyleMuted.Render(fmt.Sprintf("Seeded %d heavy dependency files (%s) via CoW reflink", seedStats.FilesTotal, ui.FormatSize(seedStats.BytesTotal))))
+				}
 			}
 
 			// Detect and run post-create hook.

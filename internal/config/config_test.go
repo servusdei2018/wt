@@ -15,6 +15,12 @@ func TestLoadDefaults(t *testing.T) {
 	if cfg.Sync.Remote != "origin" {
 		t.Errorf("cfg.Sync.Remote = %q, want %q", cfg.Sync.Remote, "origin")
 	}
+	if !cfg.Storage.DedupeOnCreate {
+		t.Errorf("cfg.Storage.DedupeOnCreate = false, want true")
+	}
+	if len(cfg.Storage.HeavyDirs) == 0 {
+		t.Errorf("cfg.Storage.HeavyDirs is empty, expected defaults")
+	}
 }
 
 func TestLoadCustomConfig(t *testing.T) {
@@ -29,6 +35,11 @@ command = "code"
 [sync]
 base_branch = "develop"
 remote = "upstream"
+
+[storage]
+dedupe_on_create = false
+require_reflink = true
+heavy_dirs = ["node_modules", "vendor"]
 `
 	if err := os.WriteFile(filepath.Join(tmpDir, ".wt.toml"), []byte(content), 0o644); err != nil {
 		t.Fatal(err)
@@ -50,6 +61,15 @@ remote = "upstream"
 	}
 	if cfg.Sync.Remote != "upstream" {
 		t.Errorf("cfg.Sync.Remote = %q, want %q", cfg.Sync.Remote, "upstream")
+	}
+	if cfg.Storage.DedupeOnCreate {
+		t.Errorf("cfg.Storage.DedupeOnCreate = true, want false")
+	}
+	if !cfg.Storage.RequireReflink {
+		t.Errorf("cfg.Storage.RequireReflink = false, want true")
+	}
+	if len(cfg.Storage.HeavyDirs) != 2 || cfg.Storage.HeavyDirs[0] != "node_modules" {
+		t.Errorf("cfg.Storage.HeavyDirs = %v, want [node_modules vendor]", cfg.Storage.HeavyDirs)
 	}
 }
 

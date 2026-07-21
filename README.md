@@ -42,6 +42,7 @@ $ wt help
   COMMANDS  
             
     completion [command]      Generate the autocompletion script for the specified shell
+    dedupe                    Retroactively deduplicate heavy build dependencies across worktrees
     done [branch]             Tear down a worktree and delete its branch
     help [command] [--flags]  Help about any command
     list                      List all worktrees with status and age
@@ -55,6 +56,17 @@ $ wt help
     -h --help                 Help for wt
     -v --version              Version for wt
 ```
+
+### Automated Copy-On-Write Resolution
+
+Heavy dependency directories (`node_modules`, `.venv`, `target/`, `vendor/`, etc.) can consume tens of gigabytes across multiple worktrees. `wt` solves this using OS-native Copy-On-Write (reflink) file cloning:
+
+- **Instant Worktree Creation**: When running `wt new`, `wt` automatically pre-seeds heavy dependency directories from existing worktrees or the repository root using zero-copy reflinks before post-creation hooks run.
+- **Retroactive Deduplication**: Run `wt dedupe` to scan existing worktrees and deduplicate duplicate dependency files using OS-native reflinks (`FICLONE` ioctl on Linux Btrfs/XFS/ZFS, APFS `clonefile` on macOS).
+- **Dry Run**: Pass `--dry-run` to preview files and byte savings without altering disk state:
+  ```bash
+  wt dedupe --dry-run
+  ```
 
 ## Configuration
 
@@ -75,6 +87,14 @@ command = "code"
 base_branch = "main"
 # Override the remote name (default: "origin").
 remote = "origin"
+
+[storage]
+# Seed heavy dependency directories via CoW reflink on 'wt new' (default: true).
+dedupe_on_create = true
+# Fail if CoW reflink is unsupported on the filesystem (default: false).
+require_reflink = false
+# List of heavy dependency directory names to target.
+heavy_dirs = ["node_modules", "vendor", ".venv", "venv", "__pycache__", ".gradle", "target", ".build", ".tox"]
 ```
 
 ### Post-Create Hook Detection Priority

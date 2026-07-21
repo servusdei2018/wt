@@ -4,6 +4,7 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/servusdei2018/wt/internal/config"
 	"github.com/spf13/cobra"
 )
 
@@ -51,5 +52,28 @@ func TestWorktreePathValidation(t *testing.T) {
 	_, err = a.worktreePath("../../outside")
 	if err == nil {
 		t.Error("worktreePath() expected error for path traversal, got nil")
+	}
+}
+
+func TestDedupeCommand(t *testing.T) {
+	tmpDir := t.TempDir()
+	a := &app{
+		repoRoot: tmpDir,
+		cfg:      &config.Config{},
+	}
+
+	cmd := a.dedupeCmd()
+	if cmd.Name() != "dedupe" {
+		t.Errorf("expected command name 'dedupe', got %q", cmd.Name())
+	}
+
+	dryRunFlag := cmd.Flags().Lookup("dry-run")
+	if dryRunFlag == nil {
+		t.Error("expected --dry-run flag on dedupe command")
+	}
+
+	reflinkFlag := cmd.Flags().Lookup("require-reflink")
+	if reflinkFlag == nil {
+		t.Error("expected --require-reflink flag on dedupe command")
 	}
 }

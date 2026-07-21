@@ -104,6 +104,7 @@ func main() {
 		a.refreshCmd(),
 		a.listCmd(),
 		a.sizeCmd(),
+		a.dedupeCmd(),
 	)
 
 	if err := fang.Execute(context.Background(), root); err != nil {

@@ -27,16 +27,32 @@ type SyncConfig struct {
 	Remote     string `toml:"remote"`
 }
 
+// StorageConfig holds shared dependency store settings.
+type StorageConfig struct {
+	RequireReflink bool     `toml:"require_reflink"`
+	DedupeOnCreate bool     `toml:"dedupe_on_create"`
+	HeavyDirs      []string `toml:"heavy_dirs"`
+}
+
 // Config is the top-level representation of .wt.toml.
 type Config struct {
-	Hooks  HooksConfig  `toml:"hooks"`
-	Editor EditorConfig `toml:"editor"`
-	Sync   SyncConfig   `toml:"sync"`
+	Hooks   HooksConfig   `toml:"hooks"`
+	Editor  EditorConfig  `toml:"editor"`
+	Sync    SyncConfig    `toml:"sync"`
+	Storage StorageConfig `toml:"storage"`
 }
 
 func defaults() *Config {
 	return &Config{
 		Sync: SyncConfig{Remote: "origin"},
+		Storage: StorageConfig{
+			DedupeOnCreate: true,
+			RequireReflink: false,
+			HeavyDirs: []string{
+				"node_modules", "vendor", ".venv", "venv",
+				"__pycache__", ".gradle", "target", ".build", ".tox",
+			},
+		},
 	}
 }
 
